@@ -1,8 +1,8 @@
-import { reroute } from "./reroute.js";
-import { find } from "../utils/find.js";
-import { formatErrorMessage } from "../applications/app-errors.js";
-import { isInBrowser } from "../utils/runtime-environment.js";
-import { isStarted } from "../start.js";
+import { reroute } from './reroute.js';
+import { find } from '../utils/find.js';
+import { formatErrorMessage } from '../applications/app-errors.js';
+import { isInBrowser } from '../utils/runtime-environment.js';
+import { isStarted } from '../start.js';
 
 /* We capture navigation event listeners so that we can make sure
  * that application navigation listeners are not called until
@@ -14,20 +14,15 @@ const capturedEventListeners = {
   popstate: [],
 };
 
-export const routingEventsListeningTo = ["hashchange", "popstate"];
+export const routingEventsListeningTo = ['hashchange', 'popstate'];
 
 export function navigateToUrl(obj) {
   let url;
-  if (typeof obj === "string") {
+  if (typeof obj === 'string') {
     url = obj;
   } else if (this && this.href) {
     url = this.href;
-  } else if (
-    obj &&
-    obj.currentTarget &&
-    obj.currentTarget.href &&
-    obj.preventDefault
-  ) {
+  } else if (obj && obj.currentTarget && obj.currentTarget.href && obj.preventDefault) {
     url = obj.currentTarget.href;
     obj.preventDefault();
   } else {
@@ -35,26 +30,23 @@ export function navigateToUrl(obj) {
       formatErrorMessage(
         14,
         __DEV__ &&
-          `singleSpaNavigate/navigateToUrl must be either called with a string url, with an <a> tag as its context, or with an event whose currentTarget is an <a> tag`
-      )
+          `singleSpaNavigate/navigateToUrl must be either called with a string url, with an <a> tag as its context, or with an event whose currentTarget is an <a> tag`,
+      ),
     );
   }
 
   const current = parseUri(window.location.href);
   const destination = parseUri(url);
 
-  if (url.indexOf("#") === 0) {
+  if (url.indexOf('#') === 0) {
     window.location.hash = destination.hash;
   } else if (current.host !== destination.host && destination.host) {
-    if (process.env.BABEL_ENV === "test") {
+    if (process.env.BABEL_ENV === 'test') {
       return { wouldHaveReloadedThePage: true };
     } else {
       window.location.href = url;
     }
-  } else if (
-    destination.pathname === current.pathname &&
-    destination.search === current.search
-  ) {
+  } else if (destination.pathname === current.pathname && destination.search === current.search) {
     window.location.hash = destination.hash;
   } else {
     // different path, host, or query params
@@ -96,22 +88,21 @@ function patchedUpdateState(updateState, methodName) {
     const urlBefore = window.location.href;
     const result = updateState.apply(this, arguments);
     const urlAfter = window.location.href;
-
-    if (!urlRerouteOnly || urlBefore !== urlAfter) {
-      if (isStarted()) {
-        // fire an artificial popstate event once single-spa is started,
-        // so that single-spa applications know about routing that
-        // occurs in a different application
-        window.dispatchEvent(
-          createPopStateEvent(window.history.state, methodName)
-        );
-      } else {
-        // do not fire an artificial popstate event before single-spa is started,
-        // since no single-spa applications need to know about routing events
-        // outside of their own router.
-        reroute([]);
+    setTimeout(() => {
+      if (!urlRerouteOnly || urlBefore !== urlAfter) {
+        if (isStarted()) {
+          // fire an artificial popstate event once single-spa is started,
+          // so that single-spa applications know about routing that
+          // occurs in a different application
+          window.dispatchEvent(createPopStateEvent(window.history.state, methodName));
+        } else {
+          // do not fire an artificial popstate event before single-spa is started,
+          // since no single-spa applications need to know about routing events
+          // outside of their own router.
+          reroute([]);
+        }
       }
-    }
+    }, 50);
 
     return result;
   };
@@ -124,12 +115,12 @@ function createPopStateEvent(state, originalMethodName) {
   // singleSpaTrigger=<pushState|replaceState> on the event instance.
   let evt;
   try {
-    evt = new PopStateEvent("popstate", { state });
+    evt = new PopStateEvent('popstate', { state });
   } catch (err) {
     // IE 11 compatibility https://github.com/single-spa/single-spa/issues/299
     // https://docs.microsoft.com/en-us/openspecs/ie_standards/ms-html5e/bd560f47-b349-4d2c-baa8-f1560fb489dd
-    evt = document.createEvent("PopStateEvent");
-    evt.initPopStateEvent("popstate", false, false, state);
+    evt = document.createEvent('PopStateEvent');
+    evt.initPopStateEvent('popstate', false, false, state);
   }
   evt.singleSpa = true;
   evt.singleSpaTrigger = originalMethodName;
@@ -138,18 +129,15 @@ function createPopStateEvent(state, originalMethodName) {
 
 if (isInBrowser) {
   // We will trigger an app change for any routing events.
-  window.addEventListener("hashchange", urlReroute);
-  window.addEventListener("popstate", urlReroute);
+  window.addEventListener('hashchange', urlReroute);
+  window.addEventListener('popstate', urlReroute);
 
   // Monkeypatch addEventListener so that we can ensure correct timing
   const originalAddEventListener = window.addEventListener;
   const originalRemoveEventListener = window.removeEventListener;
   window.addEventListener = function (eventName, fn) {
-    if (typeof fn === "function") {
-      if (
-        routingEventsListeningTo.indexOf(eventName) >= 0 &&
-        !find(capturedEventListeners[eventName], (listener) => listener === fn)
-      ) {
+    if (typeof fn === 'function') {
+      if (routingEventsListeningTo.indexOf(eventName) >= 0 && !find(capturedEventListeners[eventName], (listener) => listener === fn)) {
         capturedEventListeners[eventName].push(fn);
         return;
       }
@@ -159,11 +147,9 @@ if (isInBrowser) {
   };
 
   window.removeEventListener = function (eventName, listenerFn) {
-    if (typeof listenerFn === "function") {
+    if (typeof listenerFn === 'function') {
       if (routingEventsListeningTo.indexOf(eventName) >= 0) {
-        capturedEventListeners[eventName] = capturedEventListeners[
-          eventName
-        ].filter((fn) => fn !== listenerFn);
+        capturedEventListeners[eventName] = capturedEventListeners[eventName].filter((fn) => fn !== listenerFn);
         return;
       }
     }
@@ -171,22 +157,12 @@ if (isInBrowser) {
     return originalRemoveEventListener.apply(this, arguments);
   };
 
-  window.history.pushState = patchedUpdateState(
-    window.history.pushState,
-    "pushState"
-  );
-  window.history.replaceState = patchedUpdateState(
-    window.history.replaceState,
-    "replaceState"
-  );
+  window.history.pushState = patchedUpdateState(window.history.pushState, 'pushState');
+  window.history.replaceState = patchedUpdateState(window.history.replaceState, 'replaceState');
 
   if (window.singleSpaNavigate) {
     console.warn(
-      formatErrorMessage(
-        41,
-        __DEV__ &&
-          "single-spa has been loaded twice on the page. This can result in unexpected behavior."
-      )
+      formatErrorMessage(41, __DEV__ && 'single-spa has been loaded twice on the page. This can result in unexpected behavior.'),
     );
   } else {
     /* For convenience in `onclick` attributes, we expose a global function for navigating to
@@ -197,7 +173,7 @@ if (isInBrowser) {
 }
 
 function parseUri(str) {
-  const anchor = document.createElement("a");
+  const anchor = document.createElement('a');
   anchor.href = str;
   return anchor;
 }
